@@ -22,3 +22,4 @@ The board used in this project is the Shenzhen LC "AC/DC Power Supply WiFi Bluet
 http://www.chinalctech.com/cpzx/Programmer/Relay_Module/519.html
 It's supplied with solderable header pins for both IO and flashing, so be aware of the need to take out your soldering iron to complete this build. 
 
+The IO port mapping is poorly documented 
