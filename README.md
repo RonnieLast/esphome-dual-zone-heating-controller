@@ -17,3 +17,8 @@ It's designed to be a stand-alone system and not dependant on Home Assistant - i
  - Boost functions over REST as well as exposed to HA
  - MQTT communication to HA
  - Internal thermostat
+
+The board used in this project is the Shenzhen LC "AC/DC Power Supply WiFi Bluetooth BLE 4-way Relay Module". 
+http://www.chinalctech.com/cpzx/Programmer/Relay_Module/519.html
+It's supplied with solderable header pins for both IO and flashing, so be aware of the need to take out your soldering iron to complete this build. 
+
