@@ -11,6 +11,7 @@ esphome:
       # read the RTC time once when the system boots
       - ds1307.read_time:
         # Put the LED into standby slow pulse state
+        # The default LED behaviour is to flash slowly
       - light.turn_on:
           id: button_light_switch_ds
           effect: "Standby2"
@@ -28,10 +29,12 @@ esp32:
 logger:
   level: DEBUG
 
-# WARNING - MQTT is also enabled 
+# MQTT is also enabled - https://esphome.io/components/mqtt.html
+# API and MQTT in use. Adding line "reboot_timeout" to prevent reboot if API does not connect (isolated mode)
 api: # No API when MQTT owns the comms
   encryption:
     key: "zelpPU2t8EQUq/vxQFube+wGJ/8gAcW2pp2O5OsgTvs="
+  reboot_timeout: 0s
 
 mqtt:
   broker: '10.0.0.15'
@@ -39,7 +42,7 @@ mqtt:
   topic_prefix: boilerrelayboard
   #username: 
   #password: 
-  discovery: true
+  discovery: false  # Discovery false to prevent duplication of the device entities in HA
   discovery_retain: true
   birth_message:
   will_message:
@@ -74,8 +77,8 @@ captive_portal:
 
 i2c:
   # Support for the RTC with backup battery
-  sda: 21
-  scl: 22
+  sda: GPIO21
+  scl: GPIO22
   scan: True
   frequency: 300kHz
   id: bus_a
@@ -85,7 +88,7 @@ display:
     model: "SH1106 128x64"
     id: white_oled
     contrast: 40%
-    reset_pin: 23
+    # reset_pin: GPIO23
     # address: 0x3C
     pages:
       - id: page1 
@@ -117,6 +120,11 @@ interval:
     then:
       - display.page.show_next: white_oled
       - component.update: white_oled
+  - interval: 1000ms # Interval for status LED
+    then:
+      - output.turn_on: statusled
+      - delay: 500ms
+      - output.turn_off: statusled
 
 font:
   - file: "gfonts://Roboto"
@@ -222,6 +230,9 @@ output:
     pin: GPIO20
     id: button_light_dhw
     inverted: False
+  - platform: gpio # This is the status LED on GPIO23
+    pin: GPIO23
+    id: statusled
 
 light:
   - platform: monochromatic
@@ -769,7 +780,7 @@ sensor:
     id: upstairs_room_temps_average
     entity_id: sensor.upstairs_room_temps_average
 
-# Climate Thermostat configuration taken from https://community.home-assistant.io/t/diy-heating-and-hot-water-controller/321592/2
+# Climate Thermostat section taken from https://community.home-assistant.io/t/diy-heating-and-hot-water-controller/321592/2
 climate:
   - platform: thermostat
     id: heating_controller
