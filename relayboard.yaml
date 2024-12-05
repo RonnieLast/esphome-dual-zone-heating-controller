@@ -15,11 +15,11 @@ esphome:
       - light.turn_on:
           id: button_light_switch_ds
           effect: "Standby2"
-          brightness: 30%
+          brightness: 100%
       - light.turn_on:
           id: button_light_switch_us
           effect: "Standby2"
-          brightness: 30%
+          brightness: 100%
 
 esp32:
   board: esp32dev
@@ -93,6 +93,12 @@ display:
     pages:
       - id: page1 
         lambda: |-
+            char str[17];
+            //const time_t oneHourInSec = 3600;
+            //time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
+            time_t currTime = id(ds1307_time).now().timestamp;
+            strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+            it.printf(-10, 64, id(font3), TextAlign::BOTTOM_RIGHT, "Time: %s", str);
             it.printf(0, 0, id(font1), "Heating");
             it.printf(0, 20, id(font1), "Controller");
       - id: page2
@@ -102,21 +108,27 @@ display:
             //time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
             time_t currTime = id(ds1307_time).now().timestamp;
             strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-            it.printf(0, 0, id(font1), "Time: %s", str);
-            it.printf(0, 44, id(font1), "%.1f°C", id(office_temperature).state);
+            it.printf(0, 0, id(font3), "Time: %s", str);
+            it.printf(0, 44, id(font3), TextAlign::BOTTOM_LEFT, "Upsta Avg %.1f°C", id(upstairs_room_temps_average).state);
+            it.printf(0, 64, id(font3), TextAlign::BOTTOM_LEFT, "Downs Avg %.1f°C", id(downstairs_room_temps_average).state);
       - id: page3
         lambda: |-
-            it.printf(0, 0, id(font1), "BOOST UNTIL");
-            it.printf(0, 44, id(font1), TextAlign::BOTTOM_LEFT, "Up   - %s", id(text_time_us_heating).state.c_str());
-            it.printf(0, 64, id(font1), TextAlign::BOTTOM_LEFT, "Down - %s", id(text_time_ds_heating).state.c_str());
+            it.printf(0, 0, id(font1), "Central Heat");
+            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Upstairs: %s", id(text_time_us_heating).state.c_str());
+            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Down:     %s", id(text_time_ds_heating).state.c_str());
       - id: page4
         lambda: |-
             it.printf(0, 0, id(font1), "Hot Tank");
-            it.printf(0, 44, id(font1), TextAlign::BOTTOM_LEFT, "Top   - %s", id(text_time_us_heating).state.c_str());
-            it.printf(0, 64, id(font1), TextAlign::BOTTOM_LEFT, "Bottom - %s", id(text_time_ds_heating).state.c_str());
+            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Temp:  %.1f°C", id(hot_tank_air_temperature_6_filtered).state);
+            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Energy: %.1fkWh", id(hot_tank_energy).state);
+      - id: page5
+        lambda: |-
+            it.printf(0, 0, id(font1), "Testing");
+            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Full Bright?- %i", id(heating_controller_full_brightness).state);
+            
 
 interval:
-  - interval: 7s   # Interval timer for page changes on OLED display
+  - interval: 3s   # Interval timer for page changes on OLED display
     then:
       - display.page.show_next: white_oled
       - component.update: white_oled
@@ -127,9 +139,15 @@ interval:
       - output.turn_off: statusled
 
 font:
-  - file: "gfonts://Roboto"
+  - file: "gfonts://Kanit"
     id: font1
     size: 20
+  - file: "gfonts://Roboto"
+    id: font2
+    size: 18
+  - file: "gfonts://Roboto"
+    id: font3
+    size: 16
 
 globals:
   # Global Enable/Disable for holiday/summertime disablement
@@ -263,13 +281,27 @@ light:
           name: "Standby2"
           colors:
             - state: true
-              brightness: 50%
+              brightness: 70%
               duration: 150ms
             - state: false
               duration: 1500ms
       - pulse:
           name: "HeatingActive"
           transition_length: 1.5s
+          update_interval: 2s
+      - strobe:
+          name: "Automode"
+          colors:
+            - state: true
+              brightness: 70%
+              duration: 1650ms
+            - state: false
+              duration: 350ms
+      - pulse:
+          name: "Automode2"
+          transition_length:
+            on_length: 1.1s
+            off_length: 50ms
           update_interval: 2s
   - platform: monochromatic
     name: Upstairs Heating
@@ -298,13 +330,27 @@ light:
           name: "Standby2"
           colors:
             - state: true
-              brightness: 50%
+              brightness: 70%
               duration: 150ms
             - state: false
               duration: 1500ms
       - pulse:
           name: "HeatingActive"
           transition_length: 1.5s
+          update_interval: 2s
+      - strobe:
+          name: "Automode"
+          colors:
+            - state: true
+              brightness: 70%
+              duration: 1650ms
+            - state: false
+              duration: 350ms
+      - pulse:
+          name: "Automode2"
+          transition_length:
+            on_length: 1.1s
+            off_length: 50ms
           update_interval: 2s
   - platform: monochromatic
     name: Hot Water
@@ -333,7 +379,7 @@ light:
           name: "Standby2"
           colors:
             - state: true
-              brightness: 50%
+              brightness: 70%
               duration: 150ms
             - state: false
               duration: 1500ms
@@ -362,8 +408,8 @@ text_sensor:
 binary_sensor:
   # To enable zone heating there are three types of button-press:
     # Single press (on_press) calls a 1hr heating boost
-    # Double-press (>0.1 sec, <0.5 sec) calls a 2hr heating boost
-    # Long press (>3 sec) is a cancellation of boost
+    # Double press (within 5 sec of the first) calls a 2hr heating boost
+    # Long press (hold >3 sec) is a cancellation of boost
   - platform: gpio
     # UPSTAIRS ZONE - physical button
     pin: 
@@ -434,6 +480,10 @@ binary_sensor:
       then:
         - lambda: |-
             id(heating_upstairs_enable) = x;
+  - platform: homeassistant  # Param coming from HA
+    name: "Full Brightness"   # If sun is down then dim the lights and display
+    entity_id: "binary_sensor.heating_controller_full_brightness"
+    id: "heating_controller_full_brightness"
 
 # Four relay outputs, exposed as switches in Home Assistant
 switch:
@@ -442,21 +492,21 @@ switch:
     pin: GPIO32
     name: Heating US relay direct
     id: brb_us_direct
-    # internal: true
+    internal: true
 
   - platform: gpio
     # DOWNSTAIRS RELAY
     pin: GPIO33
     name: Heating DS relay direct
     id: brb_ds_direct
-    # internal: true
+    internal: true
 
   - platform: gpio
     # HOT WATER RELAY
     pin: GPIO25
     name: Hot Water relay direct
     id: brb_hot_water_direct
-    #internal: true
+    internal: true
 
   - platform: gpio
     # NOT USED
@@ -504,6 +554,30 @@ switch:
     turn_on_action:
       then:
         - script.execute: hot_water_1hr30
+
+  - platform: template # Switch exposed to HA
+    # AUTO mode UPSTAIRS
+    name: "AUTO mode - Upstairs"
+    id: "brb_us_auto_mode_toggle"
+    optimistic: true
+    turn_on_action:
+      then:
+        - script.execute: auto_mode_on_us
+    turn_off_action: 
+      then:
+        - script.execute: auto_mode_off_us
+
+  - platform: template # Switch exposed to HA
+    # AUTO mode DOWNSTAIRS
+    name: "AUTO mode - Downstairs"
+    id: "brb_ds_auto_mode_toggle"
+    optimistic: true
+    turn_on_action:
+      then:
+        - script.execute: auto_mode_on_ds
+    turn_off_action: 
+      then:
+        - script.execute: auto_mode_off_ds
 
   - platform: restart
     id: boilerrelayboard_restart
@@ -641,6 +715,7 @@ script:
       - delay: 1 min
       # ^^ Change back to 60 min
       - switch.turn_off: brb_ds_direct
+      - script.execute: is_auto_ds_on                 # <<<<<<<< duplicate this in other scripts
       - light.turn_on:
           id: button_light_switch_ds
           effect: "Standby2"
@@ -709,6 +784,84 @@ script:
           brightness: 30%
       - logger.log: "BoilerRelayBoard DS off 2hr"
 
+      # ####### Thermostat AUTO modes ########
+  - id: auto_mode_on_us
+    # Heating into AUTO mode UPSTAIRS
+    mode: single
+    then:
+      - climate.control:
+          id: thermostat_us
+          mode: "HEAT"
+      - light.turn_on:
+          id: button_light_switch_us
+          effect: "Automode2"
+          brightness: 50%
+      - logger.log: "BoilerRelayBoard US AUTO mode"
+      - display.page.show: page3
+      # Then also set the respective screen element to AUTO
+      - text_sensor.template.publish:
+          id: text_time_us_heating
+          state: !lambda |-
+            return {"AUTO"};
+
+  - id: auto_mode_off_us
+    # Turn off AUTO mode UPSTAIRS
+    mode: single
+    then:
+      - climate.control:
+          id: thermostat_us
+          mode: "OFF"
+      - light.turn_on:
+          id: button_light_switch_us
+          effect: "Standby2"
+          brightness: 30%
+      - logger.log: "BoilerRelayBoard US AUTO mode OFF"
+      - display.page.show: page3
+      # Then also set the respective screen element to AUTO
+      - text_sensor.template.publish:
+          id: text_time_us_heating
+          state: !lambda |-
+            return {"off"};
+
+  - id: auto_mode_on_ds
+    # Heating into AUTO mode DOWNSTAIRS
+    mode: single
+    then:
+      - climate.control:
+          id: thermostat_ds
+          mode: "HEAT"
+      - light.turn_on:
+          id: button_light_switch_ds
+          effect: "Automode2"
+          brightness: 50%
+      - logger.log: "BoilerRelayBoard DS AUTO mode"
+      - display.page.show: page3
+      # Then also set the respective screen element to AUTO
+      - text_sensor.template.publish:
+          id: text_time_ds_heating
+          state: !lambda |-
+            return {"AUTO"};
+
+  - id: auto_mode_off_ds
+    # Turn off AUTO mode DOWNSTAIRS
+    mode: single
+    then:
+      - climate.control:
+          id: thermostat_ds
+          mode: "OFF"
+      - light.turn_on:
+          id: button_light_switch_ds
+          effect: "Standby2"
+          brightness: 30%
+      - logger.log: "BoilerRelayBoard DS AUTO mode OFF"
+      - display.page.show: page3
+      # Then also set the respective screen element to AUTO
+      - text_sensor.template.publish:
+          id: text_time_ds_heating
+          state: !lambda |-
+            return {"off"};
+
+    # ###### General cleanup scripts #######
   - id: turn_off_downstairs
     # Turns off a zone if the button is long-pressed
     mode: single
@@ -751,7 +904,7 @@ script:
       - text_sensor.template.publish:
           id: text_time_ds_heating
           state: !lambda |-
-            return {"none"};
+            return {"off"};
 
   - id: reset_text_time_us_heating
     mode: single
@@ -759,7 +912,7 @@ script:
       - text_sensor.template.publish:
           id: text_time_us_heating
           state: !lambda |-
-            return {"none"};
+            return {"off"};
 
   - id: reset_text_time_hot_water
     mode: single
@@ -767,7 +920,17 @@ script:
       - text_sensor.template.publish:
           id: text_time_hot_water
           state: !lambda |-
-            return {"none"};
+            return {"off"};
+
+  - id: is_auto_ds_on
+    mode: single
+    then:
+      if:
+        condition:
+          lambda: 'return id(switch.brb_ds_auto_mode_toggle).state, "ON";'
+        then:
+            - script.execute: auto_mode_on_ds
+
 
 sensor:
   - platform: homeassistant
@@ -779,29 +942,67 @@ sensor:
   - platform: homeassistant
     id: upstairs_room_temps_average
     entity_id: sensor.upstairs_room_temps_average
+  - platform: homeassistant
+    id: downstairs_room_temps_average
+    entity_id: sensor.downstairs_room_temps_average
+  - platform: homeassistant
+    id: hot_tank_air_temperature_6_filtered
+    entity_id: sensor.hot_tank_air_temperature_6_filtered
+  - platform: homeassistant
+    id: hot_tank_energy
+    entity_id: sensor.hot_tank_energy
+    
 
-# Climate Thermostat section taken from https://community.home-assistant.io/t/diy-heating-and-hot-water-controller/321592/2
+# Climate Thermostat section taken from a good example: https://community.home-assistant.io/t/diy-heating-and-hot-water-controller/321592/2
 climate:
   - platform: thermostat
-    id: heating_controller
-    name: "Upstairs Controller"
+    id: thermostat_us
+    name: "Thermostat Upstairs"
     sensor: upstairs_room_temps_average
     preset:
-      - name: Home
+      - name: Normal
         default_target_temperature_low: 20 °C
+      - name: Low
+        default_target_temperature_low: 17 °C
     visual:
       min_temperature: 16.0 °C
-      max_temperature: 25.0 °C
+      max_temperature: 24.0 °C
       temperature_step: 0.5 °C
     min_heating_off_time: 300s
     min_heating_run_time: 300s
     heat_overrun: 0.5 °C
     heat_deadband: 0.2 °C
     heat_action:
-      - switch.turn_on: relay4_direct
+      - switch.turn_on: brb_us_direct
     min_idle_time: 0s
     idle_action:
-      - switch.turn_off: relay4_direct
+      - switch.turn_off: brb_us_direct
     off_mode:
-      - switch.turn_off: relay4_direct
+      - switch.turn_off: brb_us_direct
+      - delay: 0.2s  # Clashes with going idle
+
+  - platform: thermostat
+    id: thermostat_ds
+    name: "Thermostat Downstairs"
+    sensor: downstairs_room_temps_average
+    preset:
+      - name: Normal
+        default_target_temperature_low: 21 °C
+      - name: Low
+        default_target_temperature_low: 18 °C
+    visual:
+      min_temperature: 16.0 °C
+      max_temperature: 24.0 °C
+      temperature_step: 0.5 °C
+    min_heating_off_time: 300s
+    min_heating_run_time: 300s
+    heat_overrun: 0.5 °C
+    heat_deadband: 0.2 °C
+    heat_action:
+      - switch.turn_on: brb_ds_direct
+    min_idle_time: 0s
+    idle_action:
+      - switch.turn_off: brb_ds_direct
+    off_mode:
+      - switch.turn_off: brb_ds_direct
       - delay: 0.2s  # Clashes with going idle
