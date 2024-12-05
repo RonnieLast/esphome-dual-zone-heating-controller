@@ -23,9 +23,10 @@ Features:
  - Optional internal climate/thermostats (auto-mode) to manage each zone. (Auto mode is dependant on HA for temperature data)
 
 To enable zone heating there are three types of button-press:
-   Single press (on_press) calls a 1hr heating boost
-   Double press (on_double_click >0.1 sec, <0.5 sec) calls a 2hr heating boost
-   Long press (on_click >3 sec) is a cancellation of boost
+  - Single press calls a 1hr heating boost
+  - Double press (within 5 sec of the first press) calls a 2hr heating boost
+  - Long press (hold >3 sec) is a cancellation of boost
+
 
 The board used in this project is the Shenzhen LC "AC/DC Power Supply WiFi Bluetooth BLE 4-way Relay Module". 
 http://www.chinalctech.com/cpzx/Programmer/Relay_Module/519.html
