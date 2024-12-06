@@ -6,20 +6,39 @@ substitutions:
 esphome:
   name: relayboard1
   on_boot:
-    # priority: 600
+    priority: -100  # Network sessions such as MQTT/API are running at this level
     then:
       # read the RTC time once when the system boots
       - ds1307.read_time:
+      #- if:    # Check if we are still in AUTO mode and then set the switch back into the correct state
+      #    condition:
+      #      lambda: 'return id(thermostat_ds).mode == CLIMATE_MODE_HEAT;'
+      #    then:
+      #      - switch.turn_on: brb_ds_auto_mode_toggle
+      #      - logger.log: "break IS CLIMATE_MODE_HEAT - DS"
+      #    else: 
+      #      - logger.log: "break Checkpoint - DS"
+      #- if:    # Check if we are still in AUTO mode and then set the switch back into the correct state
+      #    condition:
+      #      lambda: 'return id(thermostat_us).mode == CLIMATE_MODE_HEAT;'
+      #    then:
+      #      - switch.turn_on: brb_us_auto_mode_toggle
+      #      - logger.log: "break IS CLIMATE_MODE_HEAT - US"
+      #    else: 
+      #      - logger.log: "break Checkpoint - US"
         # Put the LED into standby slow pulse state
         # The default LED behaviour is to flash slowly
-      - light.turn_on:
-          id: button_light_switch_ds
-          effect: "Standby2"
-          brightness: 100%
-      - light.turn_on:
-          id: button_light_switch_us
-          effect: "Standby2"
-          brightness: 100%
+#      - light.turn_on:
+#          id: button_light_switch_ds
+#          effect: "Standby2"
+#          brightness: 100%
+#      - light.turn_on:
+#          id: button_light_switch_us
+#          effect: "Standby2"
+#          brightness: 100%
+
+preferences:
+  flash_write_interval: 1min
 
 esp32:
   board: esp32dev
@@ -27,7 +46,7 @@ esp32:
     type: arduino
 
 logger:
-  level: DEBUG
+  level: VERBOSE
 
 # MQTT is also enabled - https://esphome.io/components/mqtt.html
 # API and MQTT in use. Adding line "reboot_timeout" to prevent reboot if API does not connect (isolated mode)
@@ -282,9 +301,9 @@ light:
           colors:
             - state: true
               brightness: 70%
-              duration: 150ms
+              duration: 120ms
             - state: false
-              duration: 1500ms
+              duration: 1800ms
       - pulse:
           name: "HeatingActive"
           transition_length: 1.5s
@@ -331,9 +350,9 @@ light:
           colors:
             - state: true
               brightness: 70%
-              duration: 150ms
+              duration: 120ms
             - state: false
-              duration: 1500ms
+              duration: 1800ms
       - pulse:
           name: "HeatingActive"
           transition_length: 1.5s
@@ -560,6 +579,7 @@ switch:
     name: "AUTO mode - Upstairs"
     id: "brb_us_auto_mode_toggle"
     optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
     turn_on_action:
       then:
         - script.execute: auto_mode_on_us
@@ -572,6 +592,7 @@ switch:
     name: "AUTO mode - Downstairs"
     id: "brb_ds_auto_mode_toggle"
     optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
     turn_on_action:
       then:
         - script.execute: auto_mode_on_ds
@@ -684,14 +705,13 @@ script:
       - delay: 1 min
       # ^^ Change back to 60 min
       - switch.turn_off: brb_us_direct
-      - light.turn_on:
-          id: button_light_switch_us
-          effect: "Standby2"
-          brightness: 30%
-      - text_sensor.template.publish:
-          id: text_time_us_heating # When complete, send a text string to HA containing 'off'
-          state: !lambda |-
-            return {"off"};
+      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+          condition:
+            lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+          then:
+            - script.execute: auto_mode_on_us
+          else: 
+            - script.execute: boost_mode_off_us
       - logger.log: "BoilerRelayBoard US off 1hr"
 
   - id: heating_downstairs_1hr
@@ -715,16 +735,14 @@ script:
       - delay: 1 min
       # ^^ Change back to 60 min
       - switch.turn_off: brb_ds_direct
-      - script.execute: is_auto_ds_on                 # <<<<<<<< duplicate this in other scripts
-      - light.turn_on:
-          id: button_light_switch_ds
-          effect: "Standby2"
-          brightness: 30%
-      - text_sensor.template.publish:
-          id: text_time_ds_heating
-          state: !lambda |-
-            return {"off"};
-      - logger.log: "BoilerRelayBoard DS off 1hr"
+      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+          condition:
+            lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+          then:
+            - script.execute: auto_mode_on_ds
+          else: 
+            - script.execute: boost_mode_off_ds
+            - logger.log: "BoilerRelayBoard DS off 1hr"
 
   - id: heating_upstairs_2hr
     mode: restart
@@ -747,14 +765,13 @@ script:
       - delay: 1 min
       # ^^ Change back to 60 min
       - switch.turn_off: brb_us_direct
-      - light.turn_on:
-          id: button_light_switch_us
-          effect: "Standby2"
-          brightness: 30%
-      - text_sensor.template.publish:
-          id: text_time_us_heating # When complete, send a text string to HA containing 'off'
-          state: !lambda |-
-            return {"off"};
+      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+          condition:
+            lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+          then:
+            - script.execute: auto_mode_on_us
+          else: 
+            - script.execute: boost_mode_off_us
       - logger.log: "BoilerRelayBoard US off 2hr"
 
   - id: heating_downstairs_2hr
@@ -778,10 +795,13 @@ script:
       - delay: 2 min
       #  ^^ Change back to 120 min
       - switch.turn_off: brb_ds_direct
-      - light.turn_on:
-          id: button_light_switch_ds
-          effect: "Standby2"
-          brightness: 30%
+      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+          condition:
+            lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+          then:
+            - script.execute: auto_mode_on_ds
+          else: 
+            - script.execute: boost_mode_off_ds
       - logger.log: "BoilerRelayBoard DS off 2hr"
 
       # ####### Thermostat AUTO modes ########
@@ -862,6 +882,33 @@ script:
             return {"off"};
 
     # ###### General cleanup scripts #######
+
+  - id: boost_mode_off_ds
+    # Return LED and text sensor off
+    mode: single
+    then:
+      - light.turn_on:
+          id: button_light_switch_ds
+          effect: "Standby2"
+          brightness: 30%
+      - text_sensor.template.publish:
+          id: text_time_ds_heating
+          state: !lambda |-
+            return {"off"};
+
+  - id: boost_mode_off_us
+    # Return LED and text sensor off
+    mode: single
+    then:
+      - light.turn_on:
+          id: button_light_switch_us
+          effect: "Standby2"
+          brightness: 30%
+      - text_sensor.template.publish:
+          id: text_time_us_heating
+          state: !lambda |-
+            return {"off"};
+
   - id: turn_off_downstairs
     # Turns off a zone if the button is long-pressed
     mode: single
@@ -921,16 +968,6 @@ script:
           id: text_time_hot_water
           state: !lambda |-
             return {"off"};
-
-  - id: is_auto_ds_on
-    mode: single
-    then:
-      if:
-        condition:
-          lambda: 'return id(switch.brb_ds_auto_mode_toggle).state, "ON";'
-        then:
-            - script.execute: auto_mode_on_ds
-
 
 sensor:
   - platform: homeassistant
