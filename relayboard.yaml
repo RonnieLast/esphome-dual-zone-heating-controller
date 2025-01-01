@@ -10,35 +10,9 @@ esphome:
     then:
       # read the RTC time once when the system boots
       - ds1307.read_time:
-      #- if:    # Check if we are still in AUTO mode and then set the switch back into the correct state
-      #    condition:
-      #      lambda: 'return id(thermostat_ds).mode == CLIMATE_MODE_HEAT;'
-      #    then:
-      #      - switch.turn_on: brb_ds_auto_mode_toggle
-      #      - logger.log: "break IS CLIMATE_MODE_HEAT - DS"
-      #    else: 
-      #      - logger.log: "break Checkpoint - DS"
-      #- if:    # Check if we are still in AUTO mode and then set the switch back into the correct state
-      #    condition:
-      #      lambda: 'return id(thermostat_us).mode == CLIMATE_MODE_HEAT;'
-      #    then:
-      #      - switch.turn_on: brb_us_auto_mode_toggle
-      #      - logger.log: "break IS CLIMATE_MODE_HEAT - US"
-      #    else: 
-      #      - logger.log: "break Checkpoint - US"
-        # Put the LED into standby slow pulse state
-        # The default LED behaviour is to flash slowly
-#      - light.turn_on:
-#          id: button_light_switch_ds
-#          effect: "Standby2"
-#          brightness: 100%
-#      - light.turn_on:
-#          id: button_light_switch_us
-#          effect: "Standby2"
-#          brightness: 100%
 
 preferences:
-  flash_write_interval: 1min
+  flash_write_interval: 3min
 
 esp32:
   board: esp32dev
@@ -46,22 +20,22 @@ esp32:
     type: arduino
 
 logger:
-  level: VERBOSE
+  level: DEBUG
 
 # MQTT is also enabled - https://esphome.io/components/mqtt.html
 # API and MQTT in use. Adding line "reboot_timeout" to prevent reboot if API does not connect (isolated mode)
 api: # No API when MQTT owns the comms
   encryption:
     key: "zelpPU2t8EQUq/vxQFube+wGJ/8gAcW2pp2O5OsgTvs="
-  reboot_timeout: 0s
+  reboot_timeout: 0s   # Disable reboot if no HA connection
 
 mqtt:
   broker: '10.0.0.15'
   port: 1883
   topic_prefix: boilerrelayboard
-  #username: 
-  #password: 
-  discovery: false  # Discovery false to prevent duplication of the device entities in HA
+  #username: <your username here>
+  #password: <your password here>
+  discovery: false  # Discovery false to prevent duplication of MQTT and API device entities in HA
   discovery_retain: true
   birth_message:
   will_message:
@@ -88,6 +62,7 @@ wifi:
     static_ip: 10.0.0.68
     gateway: 10.0.0.1
     subnet: 255.255.254.0
+  reboot_timeout:  15min   # Setting to 15min (default) so that we can recover the WiFi connection reasonably quickly
   ap:
     ssid: "Central Heating Fallback Hotspot"
     password: !secret wifi_password
@@ -95,11 +70,11 @@ wifi:
 captive_portal:
 
 i2c:
-  # Support for the RTC with backup battery
+  # Support for the RTC with backup battery and OLED display
   sda: GPIO21
   scl: GPIO22
   scan: True
-  frequency: 300kHz
+  frequency: 300kHz # Frequency of 300kHz eliminates most of the latency errors
   id: bus_a
 
 display:
@@ -110,41 +85,39 @@ display:
     # reset_pin: GPIO23
     # address: 0x3C
     pages:
-      - id: page1 
-        lambda: |-
-            char str[17];
-            //const time_t oneHourInSec = 3600;
-            //time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
-            time_t currTime = id(ds1307_time).now().timestamp;
-            strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-            it.printf(-10, 64, id(font3), TextAlign::BOTTOM_RIGHT, "Time: %s", str);
-            it.printf(0, 0, id(font1), "Heating");
-            it.printf(0, 20, id(font1), "Controller");
+#      - id: page1 
+#        lambda: |-
+#            char str[17];
+#            //const time_t oneHourInSec = 3600;
+#            //time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
+#            time_t currTime = id(ds1307_time).now().timestamp;
+#            strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+#            it.printf(-10, 64, id(font3), TextAlign::BOTTOM_RIGHT, "Time: %s", str);
+#            it.printf(0, 0, id(font1), "Heating");
+#            it.printf(0, 20, id(font1), "Controller");
       - id: page2
         lambda: |-
             char str[17];
-            //const time_t oneHourInSec = 3600;
-            //time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
             time_t currTime = id(ds1307_time).now().timestamp;
             strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
             it.printf(0, 0, id(font3), "Time: %s", str);
             it.printf(0, 44, id(font3), TextAlign::BOTTOM_LEFT, "Upsta Avg %.1f°C", id(upstairs_room_temps_average).state);
             it.printf(0, 64, id(font3), TextAlign::BOTTOM_LEFT, "Downs Avg %.1f°C", id(downstairs_room_temps_average).state);
-      - id: page3
-        lambda: |-
-            it.printf(0, 0, id(font1), "Central Heat");
-            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Upstairs: %s", id(text_time_us_heating).state.c_str());
-            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Down:     %s", id(text_time_ds_heating).state.c_str());
       - id: page4
         lambda: |-
-            it.printf(0, 0, id(font1), "Hot Tank");
-            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Temp:  %.1f°C", id(hot_tank_air_temperature_6_filtered).state);
-            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Energy: %.1fkWh", id(hot_tank_energy).state);
+            it.printf(0, 0, id(font3), "Upstairs");
+            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "State: %s", id(text_state_us_heating).state.c_str());
+            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Time:     %s", id(text_time_us_heating).state.c_str());
+      - id: page3
+        lambda: |-
+            it.printf(0, 0, id(font3), "Downstairs");
+            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "State: %s", id(text_state_ds_heating).state.c_str());
+            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Time:     %s", id(text_time_ds_heating).state.c_str());
       - id: page5
         lambda: |-
-            it.printf(0, 0, id(font1), "Testing");
-            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Full Bright?- %i", id(heating_controller_full_brightness).state);
-            
+            it.printf(0, 0, id(font3), "Hot Tank");
+            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Temp:  %.1f°C", id(hot_tank_air_temperature_6_filtered).state);
+            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Energy: %.1fkWh", id(hot_tank_energy).state);
 
 interval:
   - interval: 3s   # Interval timer for page changes on OLED display
@@ -170,6 +143,7 @@ font:
 
 globals:
   # Global Enable/Disable for holiday/summertime disablement
+  # We want to restore these settings from flash on power restore
   - id: heating_global_enable
     type: bool
     restore_value: yes
@@ -308,20 +282,12 @@ light:
           name: "HeatingActive"
           transition_length: 1.5s
           update_interval: 2s
-      - strobe:
-          name: "Automode"
-          colors:
-            - state: true
-              brightness: 70%
-              duration: 1650ms
-            - state: false
-              duration: 350ms
       - pulse:
           name: "Automode2"
           transition_length:
-            on_length: 1.1s
-            off_length: 50ms
-          update_interval: 2s
+            on_length: 500ms
+            off_length: 500ms
+          update_interval: 1s
   - platform: monochromatic
     name: Upstairs Heating
     output: button_light_us
@@ -357,20 +323,12 @@ light:
           name: "HeatingActive"
           transition_length: 1.5s
           update_interval: 2s
-      - strobe:
-          name: "Automode"
-          colors:
-            - state: true
-              brightness: 70%
-              duration: 1650ms
-            - state: false
-              duration: 350ms
       - pulse:
           name: "Automode2"
           transition_length:
-            on_length: 1.1s
-            off_length: 50ms
-          update_interval: 2s
+            on_length: 500ms
+            off_length: 500ms
+          update_interval: 1s
   - platform: monochromatic
     name: Hot Water
     output: button_light_dhw
@@ -378,22 +336,6 @@ light:
     internal: true
     # restore_mode: ALWAYS_OFF
     effects:
-      - pulse:
-          name: "Blink"
-          transition_length: 0.5s
-          update_interval: 0.5s
-      - pulse:
-          name: "Fast Pulse"
-          transition_length: 0.1s
-          update_interval: 0.4s
-      - pulse:
-          name: "Slow Pulse"
-          transition_length: 1s
-          update_interval: 2s
-      - pulse:
-          name: "Standby 1"
-          transition_length: 1s
-          update_interval: 4s
       - strobe:
           name: "Standby2"
           colors:
@@ -408,21 +350,33 @@ light:
           update_interval: 2s
 
 text_sensor:
-  # These text-sensors push text with a time-stamp to HA for status heating channel updates 
+  # These text-sensors push text to HA for status heating channel updates 
+  - platform: template
+    name: "Downstairs state"
+    id: text_state_ds_heating
+  - platform: template
+    name: "Upstairs state"
+    id: text_state_us_heating
+  - platform: template
+    name: "Hot Water state"
+    id: text_state_hot_water
   - platform: template
     name: "Downstairs on until"
     id: text_time_ds_heating
+    lambda: return {""};
   - platform: template
     name: "Upstairs on until"
     id: text_time_us_heating
+    lambda: return {""};
   - platform: template
     name: "Hot Water BOOST until"
     id: text_time_hot_water
+    lambda: return {""};
   - platform: template
     name: "Controller Time"
     id: text_controller_time
     lambda: return id(ds1307_time).now().strftime("%H:%M");
-    update_interval: 60s
+    update_interval: 30s
 
 binary_sensor:
   # To enable zone heating there are three types of button-press:
@@ -504,8 +458,9 @@ binary_sensor:
     entity_id: "binary_sensor.heating_controller_full_brightness"
     id: "heating_controller_full_brightness"
 
-# Four relay outputs, exposed as switches in Home Assistant
+
 switch:
+    # Four relay outputs, exposed as switches in Home Assistant
   - platform: gpio
     # UPSTAIRS RELAY
     pin: GPIO32
@@ -535,16 +490,22 @@ switch:
     internal: true
 
   - platform: template # Switch exposed to HA
+    name: "Heating upstairs 30m"
+    id: "heating_upstairs_30min_toggle"
+    turn_on_action:
+      - script.execute: heating_upstairs_30min
+
+  - platform: template # Switch exposed to HA
+    name: "Heating downstairs 30m"
+    id: "heating_downstairs_30min_toggle"
+    turn_on_action:
+      - script.execute: heating_downstairs_30min
+
+  - platform: template # Switch exposed to HA
     name: "Heating upstairs 1hr"
     id: "brb_heating_us_1hr_toggle"
     turn_on_action:
       - script.execute: heating_upstairs_1hr
-      #- light.turn_on: 
-      #    id: button_light_switch_ds
-      #    effect: "Blink"
-      #    brightness: 50%
-    #on_turn_off:
-    #- light.turn_off: button_light_switch_ds
 
   - platform: template # Switch exposed to HA
     name: "Heating downstairs 1hr"
@@ -560,12 +521,12 @@ switch:
       then:
         - script.execute: heating_downstairs_2hr
 
-  - platform: template # Switch exposed to HA
-    name: "Heating upstairs 2hr"
-    id: "brb_heating_us_2hr_toggle"
-    turn_on_action:
-      then:
-        - script.execute: heating_upstairs_2hr
+#  - platform: template # Switch exposed to HA
+#    name: "Heating upstairs 2hr"
+#    id: "brb_heating_us_2hr_toggle"
+#    turn_on_action:
+#      then:
+#        - script.execute: heating_upstairs_2hr
 
   - platform: template # Switch exposed to HA
     name: "Hot Water BOOST"
@@ -624,7 +585,7 @@ script:
                     time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
                     strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
                     return  { str };
-            - delay: 30 min
+            - delay: 90 min
             - switch.turn_off: brb_hot_water_direct
             - logger.log: "BoilerRelayBoard Hot Water BOOST off"
             - text_sensor.template.publish:
@@ -638,12 +599,16 @@ script:
       - if:
           condition:
             lambda: |-
-              return id(heating_global_enable) = true;
+              return id(heating_global_enable) = true || id(heating_upstairs_enable) == true;
           then: 
             - switch.turn_on: brb_us_direct
             - logger.log: "BoilerRelayBoard US on 30m"
             - text_sensor.template.publish:
-                id: text_time_us_heating # When run, send a text string to HA with the boost time
+                id: text_state_us_heating
+                state: !lambda |-
+                    return {"BOOST"};
+            - text_sensor.template.publish:
+                id: text_time_us_heating # When run, send a text string to HA with the boost completion time
                 state: !lambda |-
                     char str[17];
                     const time_t oneHourInSec = 3600;
@@ -653,10 +618,15 @@ script:
             - delay: 30 min
             - switch.turn_off: brb_us_direct
             - logger.log: "BoilerRelayBoard US off"
-            - text_sensor.template.publish:
-                id: text_time_us_heating # When complete, send a text string to HA containing 'off'
-                state: !lambda |-
-                  return {"off"};
+            - display.page.show: page4
+            - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+                condition:
+                  lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+                then:
+                  - script.execute: auto_mode_on_us
+                else: 
+                  - script.execute: boost_mode_off_us
+            - logger.log: "BoilerRelayBoard US off 30m"
 
   - id: heating_downstairs_30min
     mode: restart
@@ -664,12 +634,16 @@ script:
       - if:
           condition:
             lambda: |-
-              return id(heating_global_enable) = true;
+              return id(heating_global_enable) = true || id(heating_downstairs_enable) == true;
           then:
             - switch.turn_on: brb_ds_direct
             - logger.log: "BoilerRelayBoard DS on 30m"
             - text_sensor.template.publish:
-                id: text_time_ds_heating # When run, send a text string to HA with the boost time
+                id: text_state_ds_heating
+                state: !lambda |-
+                    return {"BOOST"};
+            - text_sensor.template.publish:
+                id: text_time_ds_heating # When run, send a text string to HA with the boost completion time
                 state: !lambda |-
                     char str[17];
                     const time_t oneHourInSec = 3600;
@@ -679,130 +653,167 @@ script:
             - delay: 30 min
             - switch.turn_off: brb_ds_direct
             - logger.log: "BoilerRelayBoard DS off"
-            - text_sensor.template.publish:
-                id: text_time_ds_heating # When complete, send a text string to HA containing 'off'
-                state: !lambda |-
-                  return {"off"};
+            - display.page.show: page3
+            - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+                condition:
+                  lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+                then:
+                  - script.execute: auto_mode_on_ds
+                else: 
+                  - script.execute: boost_mode_off_ds
+                  - logger.log: "BoilerRelayBoard DS off 30m"
 
   - id: heating_upstairs_1hr
     mode: restart
     then:
-      - switch.turn_on: brb_us_direct
-      - light.turn_on: 
-          id:  button_light_switch_us
-          effect: none
-          brightness: 90%
-      - text_sensor.template.publish:
-          id: text_time_us_heating # When run, send a text string to HA with the boost time
-          state: !lambda |-
-              char str[17];
-              const time_t oneHourInSec = 3600;
-              time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
-              strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-              return  { str };
-      - logger.log: "BoilerRelayBoard US on 1hr"
-      - display.page.show: page3
-      - delay: 1 min
-      # ^^ Change back to 60 min
-      - switch.turn_off: brb_us_direct
-      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+      - if:
           condition:
-            lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+            lambda: |-
+              return id(heating_global_enable) = true || id(heating_upstairs_enable) == true;
           then:
-            - script.execute: auto_mode_on_us
-          else: 
-            - script.execute: boost_mode_off_us
-      - logger.log: "BoilerRelayBoard US off 1hr"
+            - switch.turn_on: brb_us_direct
+            - light.turn_on: 
+                id:  button_light_switch_us
+                effect: none
+                brightness: 90%
+            - text_sensor.template.publish:
+                id: text_state_us_heating
+                state: !lambda |-
+                    return {"BOOST"};
+            - text_sensor.template.publish:
+                id: text_time_us_heating # When run, send a text string to HA with the boost completion time
+                state: !lambda |-
+                    char str[17];
+                    const time_t oneHourInSec = 3600;
+                    time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
+                    strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+                    return  { str };
+            - logger.log: "BoilerRelayBoard US on 1hr"
+            - display.page.show: page4
+            - delay: 60 min
+            - switch.turn_off: brb_us_direct
+            - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+                condition:
+                  lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+                then:
+                  - script.execute: auto_mode_on_us
+                else: 
+                  - script.execute: boost_mode_off_us
+            - logger.log: "BoilerRelayBoard US off 1hr"
 
   - id: heating_downstairs_1hr
     mode: restart
     then:
-      - switch.turn_on: brb_ds_direct
-      - light.turn_on: 
-          id:  button_light_switch_ds
-          effect: none
-          brightness: 90%
-      - text_sensor.template.publish:
-          id: text_time_ds_heating
-          state: !lambda |-
-              char str[17];
-              const time_t oneHourInSec = 3600;
-              time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
-              strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-              return  { str };
-      - logger.log: "BoilerRelayBoard DS on 1hr"
-      - display.page.show: page3
-      - delay: 1 min
-      # ^^ Change back to 60 min
-      - switch.turn_off: brb_ds_direct
-      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+      - if:
           condition:
-            lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+            lambda: |-
+              return id(heating_global_enable) = true || id(heating_downstairs_enable) == true;
           then:
-            - script.execute: auto_mode_on_ds
-          else: 
-            - script.execute: boost_mode_off_ds
-            - logger.log: "BoilerRelayBoard DS off 1hr"
+            - switch.turn_on: brb_ds_direct
+            - light.turn_on: 
+                id:  button_light_switch_ds
+                effect: none
+                brightness: 90%
+            - text_sensor.template.publish:
+                id: text_state_ds_heating
+                state: !lambda |-
+                    return {"BOOST"};
+            - text_sensor.template.publish:
+                id: text_time_ds_heating
+                state: !lambda |-
+                    char str[17];
+                    const time_t oneHourInSec = 3600;
+                    time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
+                    strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+                    return  { str };
+            - logger.log: "BoilerRelayBoard DS on 1hr"
+            - display.page.show: page3
+            - delay: 60 min
+            - switch.turn_off: brb_ds_direct
+            - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+                condition:
+                  lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+                then:
+                  - script.execute: auto_mode_on_ds
+                else: 
+                  - script.execute: boost_mode_off_ds
+                  - logger.log: "BoilerRelayBoard DS off 1hr"
 
   - id: heating_upstairs_2hr
     mode: restart
     then:
-      - switch.turn_on: brb_us_direct
-      - light.turn_on: 
-          id:  button_light_switch_us
-          effect: none
-          brightness: 90%
-      - text_sensor.template.publish:
-          id: text_time_us_heating # When run, send a text string to HA with the boost time
-          state: !lambda |-
-              char str[17];
-              const time_t oneHourInSec = 7200;
-              time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
-              strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-              return  { str };
-      - logger.log: "BoilerRelayBoard US on 2hr"
-      - display.page.show: page3
-      - delay: 1 min
-      # ^^ Change back to 60 min
-      - switch.turn_off: brb_us_direct
-      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+      - if:
           condition:
-            lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+            lambda: |-
+              return id(heating_global_enable) = true || id(heating_upstairs_enable) == true;
           then:
-            - script.execute: auto_mode_on_us
-          else: 
-            - script.execute: boost_mode_off_us
-      - logger.log: "BoilerRelayBoard US off 2hr"
+            - switch.turn_on: brb_us_direct
+            - light.turn_on: 
+                id:  button_light_switch_us
+                effect: none
+                brightness: 90%
+            - text_sensor.template.publish:
+                id: text_state_us_heating
+                state: !lambda |-
+                    return {"BOOST"};
+            - text_sensor.template.publish:
+                id: text_time_us_heating # When run, send a text string to HA with the boost completion time
+                state: !lambda |-
+                    char str[17];
+                    const time_t oneHourInSec = 7200;
+                    time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
+                    strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+                    return  { str };
+            - logger.log: "BoilerRelayBoard US on 2hr"
+            - display.page.show: page4
+            - delay: 120 min
+            - switch.turn_off: brb_us_direct
+            - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+                condition:
+                  lambda: 'return id(brb_us_auto_mode_toggle).state == true;'
+                then:
+                  - script.execute: auto_mode_on_us
+                else: 
+                  - script.execute: boost_mode_off_us
+            - logger.log: "BoilerRelayBoard US off 2hr"
 
   - id: heating_downstairs_2hr
     mode: restart
     then:
-      - switch.turn_on: brb_ds_direct
-      - light.turn_on: 
-          id:  button_light_switch_ds
-          effect: none
-          brightness: 90%
-      - text_sensor.template.publish:
-          id: text_time_ds_heating
-          state: !lambda |-
-              char str[17];
-              const time_t oneHourInSec = 7200;
-              time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
-              strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-              return  { str };
-      - logger.log: "BoilerRelayBoard DS on 2hr"
-      - display.page.show: page3
-      - delay: 2 min
-      #  ^^ Change back to 120 min
-      - switch.turn_off: brb_ds_direct
-      - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+      - if:
           condition:
-            lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+            lambda: |-
+              return id(heating_global_enable) = true || id(heating_downstairs_enable) == true;
           then:
-            - script.execute: auto_mode_on_ds
-          else: 
-            - script.execute: boost_mode_off_ds
-      - logger.log: "BoilerRelayBoard DS off 2hr"
+            - switch.turn_on: brb_ds_direct
+            - light.turn_on: 
+                id:  button_light_switch_ds
+                effect: none
+                brightness: 90%
+            - text_sensor.template.publish:
+                id: text_state_ds_heating
+                state: !lambda |-
+                    return {"BOOST"};
+            - text_sensor.template.publish:
+                id: text_time_ds_heating
+                state: !lambda |-
+                    char str[17];
+                    const time_t oneHourInSec = 7200;
+                    time_t currTime = id(ds1307_time).now().timestamp + oneHourInSec;
+                    strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+                    return  { str };
+            - logger.log: "BoilerRelayBoard DS on 2hr"
+            - display.page.show: page3
+            - delay: 120 min
+            - switch.turn_off: brb_ds_direct
+            - if:    # Check if we are still in AUTO mode and then set the zone back into the correct state
+                condition:
+                  lambda: 'return id(brb_ds_auto_mode_toggle).state == true;'
+                then:
+                  - script.execute: auto_mode_on_ds
+                else: 
+                  - script.execute: boost_mode_off_ds
+            - logger.log: "BoilerRelayBoard DS off 2hr"
 
       # ####### Thermostat AUTO modes ########
   - id: auto_mode_on_us
@@ -820,7 +831,7 @@ script:
       - display.page.show: page3
       # Then also set the respective screen element to AUTO
       - text_sensor.template.publish:
-          id: text_time_us_heating
+          id: text_state_us_heating
           state: !lambda |-
             return {"AUTO"};
 
@@ -839,7 +850,7 @@ script:
       - display.page.show: page3
       # Then also set the respective screen element to AUTO
       - text_sensor.template.publish:
-          id: text_time_us_heating
+          id: text_state_us_heating
           state: !lambda |-
             return {"off"};
 
@@ -858,7 +869,7 @@ script:
       - display.page.show: page3
       # Then also set the respective screen element to AUTO
       - text_sensor.template.publish:
-          id: text_time_ds_heating
+          id: text_state_ds_heating
           state: !lambda |-
             return {"AUTO"};
 
@@ -877,7 +888,7 @@ script:
       - display.page.show: page3
       # Then also set the respective screen element to AUTO
       - text_sensor.template.publish:
-          id: text_time_ds_heating
+          id: text_state_ds_heating
           state: !lambda |-
             return {"off"};
 
@@ -892,7 +903,7 @@ script:
           effect: "Standby2"
           brightness: 30%
       - text_sensor.template.publish:
-          id: text_time_ds_heating
+          id: text_state_ds_heating
           state: !lambda |-
             return {"off"};
 
@@ -905,7 +916,7 @@ script:
           effect: "Standby2"
           brightness: 30%
       - text_sensor.template.publish:
-          id: text_time_us_heating
+          id: text_state_us_heating
           state: !lambda |-
             return {"off"};
 
@@ -938,7 +949,7 @@ script:
     mode: single
     then:
       - switch.turn_off: brb_hot_water_direct
-      - script.execute: reset_text_time_hot_water
+      - script.execute: reset_text_state_hot_water
       - light.turn_on:
           id: button_light_switch_dhw
           effect: "Standby2"
@@ -949,33 +960,40 @@ script:
     mode: single
     then: 
       - text_sensor.template.publish:
-          id: text_time_ds_heating
+          id: text_state_ds_heating
           state: !lambda |-
             return {"off"};
+      - text_sensor.template.publish:
+          id: text_time_ds_heating
+          state: !lambda |-
+            return {""};
 
   - id: reset_text_time_us_heating
     mode: single
     then: 
       - text_sensor.template.publish:
-          id: text_time_us_heating
+          id: text_state_us_heating
           state: !lambda |-
             return {"off"};
+      - text_sensor.template.publish:
+          id: text_time_us_heating
+          state: !lambda |-
+            return {""};
 
-  - id: reset_text_time_hot_water
+  - id: reset_text_state_hot_water
     mode: single
     then: 
       - text_sensor.template.publish:
-          id: text_time_hot_water
+          id: text_state_hot_water
           state: !lambda |-
             return {"off"};
+      - text_sensor.template.publish:
+          id: text_time_hot_water
+          state: !lambda |-
+            return {""};
 
 sensor:
-  - platform: homeassistant
-    id: office_temperature
-    entity_id: sensor.tsr_ah_kitchenlower_air_temperature
-  - platform: homeassistant
-    id: downstairs_trv_temp_median
-    entity_id: sensor.downstairs_trv_temp_median
+  # Zone and hot-tank temperature sensor data ingest 
   - platform: homeassistant
     id: upstairs_room_temps_average
     entity_id: sensor.upstairs_room_temps_average
