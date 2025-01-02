@@ -26,7 +26,7 @@ logger:
 # API and MQTT in use. Adding line "reboot_timeout" to prevent reboot if API does not connect (isolated mode)
 api: # No API when MQTT owns the comms
   encryption:
-    key: "zelpPU2t8EQUq/vxQFube+wGJ/8gAcW2pp2O5OsgTvs="
+    key: ""
   reboot_timeout: 0s   # Disable reboot if no HA connection
 
 mqtt:
@@ -47,7 +47,7 @@ mqtt:
 
 ota:
   platform: esphome
-  password: "51f53bc3dcc20367df26077c8b832e07"
+  password: ""
 
 mdns:
   disabled: false
