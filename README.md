@@ -4,7 +4,7 @@ This is the YAML for a heating controller based on ESPHome and an ESP32 control 
 
 ![20250109_152603-cropped](https://github.com/user-attachments/assets/7383f497-5f0b-4594-a1be-1189d921672c)
 
-Above: Layout of the controller in an electrical box showing the OLED and back-lit buttons.
+Above: Layout of the controller in an electrical box showing the OLED and back-lit buttons. The top red button is for hot water, middle is for upstairs and bottom is for downstairs.
 
 It's designed as a controller for an S-plan dual zone and domestic hot water ("DHW") system with individual relays to control the zone relays, and one spare relay.
 See the link to an S-plan explainer below.
