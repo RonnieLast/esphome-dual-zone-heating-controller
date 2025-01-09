@@ -6,10 +6,10 @@ This is the YAML for a heating controller based on ESPHome and an ESP32 control 
 
 Above: Layout of the controller in an electrical box showing the OLED and back-lit buttons. The top red button is for hot water, middle is for upstairs and bottom is for downstairs.
 
-It's designed as a controller for an S-plan dual zone and domestic hot water ("DHW") system with individual relays to control the zone relays, and one spare relay.
+It's designed as a controller for an S-plan dual zone and domestic hot water system with individual relays to control the zone relays, and one spare relay.
 See the link to an S-plan explainer below.
 
-A primary objective is to make the controller a stand-alone system and not be fully dependant on Home Assistant; I want to be able to operate the boost functions and the auto-mode in the absence of WiFi or a Home Assistant server. I also want some basic local scheduling of heating times as well as support for domestic hot-water (indirect cylinder) and the two zones (upstairs and downstairs).
+A primary objective is to make the controller stand-alone and not be fully dependent on Home Assistant; it needs to be able to operate the boost functions and the automatic mode in the absence of WiFi or a Home Assistant server. It also needs basic local scheduling of heating times as well as support for domestic hot-water (indirect cylinder) and the two zones (upstairs and downstairs).
 
 Features:
  - OLED display
@@ -22,15 +22,15 @@ Features:
  - Optional internal climate/thermostats (auto-mode) to manage each zone. (Auto mode is dependant on HA for temperature data)
  - Zone or Global disablement from REST/HA
 
-The backlit buttons are multifunctional: one for boosting DHW, one for the upstairs zone heating and one for the downstairs zone heating. 
+The backlit buttons are multifunctional: one for boosting the hot water, one for the upstairs zone heating and one for the downstairs zone heating. 
 For each of the heating zones there are three functions available:
   - Single press calls a 1hr heating boost
   - Double press (within 5 sec of the first press) calls a 2hr heating boost
   - Long press (hold >3 sec) is a cancellation of boost
 
 The state of each zone is indicated by the LED state of each button:
-  - Button LED off: Zone off
-  - On solid: In boost mode
+  - LED off: Zone off
+  - Solid on: In boost mode
   - Fading on and off over 1 second: Auto mode
 
 The 4-way Relay Board:
