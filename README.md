@@ -45,11 +45,12 @@ https://werner.rothschopf.net/microcontroller/202208_esp32_relay_x8_en.htm
 
 Controls Exposed and Feedback to Home Assistant:
 The controller exposes commonly used functions such as boost opions (30 min, 1 hour and 2 hour) for the upstairs and downstairs zones as well as a boost function for the hot water. 
+
 ![HA-screen1](https://github.com/user-attachments/assets/5cb6633a-0480-4367-ad9f-962a77ada3b8)
 
 It also provides feedback on the states of each zone, whether that zone is in BOOST mode, TIMER moder, or AUTO mode. For both BOOST and TIMER mode we also get "on until" feedback on the completion time of each action. 
-![HA-screen2](https://github.com/user-attachments/assets/ca0305a7-b6b1-44fe-8c40-a8bba1dfc599)
 
+![HA-screen2](https://github.com/user-attachments/assets/ca0305a7-b6b1-44fe-8c40-a8bba1dfc599)
 
 Additional Resources:
 S-plan wiring explainer courtesy of John Ward: https://flameport.com/electric/central_heating/heating_wiring_S_plan.cs4
