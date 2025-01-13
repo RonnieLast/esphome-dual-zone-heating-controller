@@ -11,7 +11,7 @@ See the link to an S-plan explainer below.
 
 A primary objective is to make the controller stand-alone and not be fully dependent on Home Assistant; it needs to be able to operate the boost functions and the automatic mode in the absence of WiFi or a Home Assistant server. It also needs basic local scheduling of heating times as well as support for domestic hot-water (indirect cylinder) and the two zones (upstairs and downstairs).
 
-Features:
+# Features:
  - OLED display
  - Three zone multifunction buttons with LED status
  - Internal schedules
@@ -33,7 +33,7 @@ The state of each zone is indicated by the LED state of each button:
   - Solid on: In boost mode
   - Fading on and off over 1 second: Auto mode
 
-The 4-way Relay Board:
+# The 4-way Relay Board:
 The board used in this project is the Shenzhen LC "AC/DC Power Supply WiFi Bluetooth BLE 4-way Relay Module". 
 http://www.chinalctech.com/cpzx/Programmer/Relay_Module/519.html
 It's supplied with solderable header pins for both IO and flashing, so be aware of the need to take out your soldering iron to complete this build. 
@@ -54,5 +54,5 @@ It also provides feedback on the states of each zone, whether that zone is in BO
 
 ![HA-screen2](https://github.com/user-attachments/assets/ca0305a7-b6b1-44fe-8c40-a8bba1dfc599)
 
-Additional Resources:
+# Additional Resources:
 S-plan wiring explainer courtesy of John Ward: https://flameport.com/electric/central_heating/heating_wiring_S_plan.cs4
