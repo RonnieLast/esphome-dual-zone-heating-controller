@@ -45,8 +45,7 @@ https://werner.rothschopf.net/microcontroller/202208_esp32_relay_x8_en.htm
 
 ![circuit_image](https://github.com/user-attachments/assets/1e9925cb-4f6b-49eb-8737-a9f256f0795a)
 
-
-Controls Exposed and Feedback to Home Assistant:
+# Controls Exposed and Feedback to Home Assistant:
 The controller exposes commonly used functions such as boost opions (30 min, 1 hour and 2 hour) for the upstairs and downstairs zones as well as a boost function for the hot water. 
 
 ![HA-screen1](https://github.com/user-attachments/assets/5cb6633a-0480-4367-ad9f-962a77ada3b8)
