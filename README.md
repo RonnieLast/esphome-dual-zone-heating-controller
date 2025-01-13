@@ -15,11 +15,11 @@ A secondary objective was to make the controller stand-alone and not be fully de
 # Features:
  - OLED display
  - Three zone multifunction buttons with LED status
+ - Multi-function buttons (single press, double press and long press)
+ - Boost functions available via buttons or over REST or exposed to HA
  - Internal schedules
  - RTC clock and battery (to support internal schedules)
- - Boost function available via buttons, over REST as well as exposed to HA
- - Multi-function buttons (single press, double press and long press)
- - MQTT and API communication to HA
+ - MQTT and API communication to HA (MQTT for possible future leveraging of QoS)
  - Optional internal climate/thermostats (auto-mode) to manage each zone. (Auto mode is dependant on HA for temperature data)
  - Zone or Global disablement from REST/HA
 
