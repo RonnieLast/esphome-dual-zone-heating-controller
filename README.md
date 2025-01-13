@@ -9,6 +9,7 @@ This is the YAML for a heating controller based on ESPHome and an ESP32 control 
 # Objectives
 
 The primary objective was to create a controller designed for an S-plan dual-zone and domestic hot-water (DHW) system with individual relays to control each of the zones and hot-water, and one spare relay. (See the link to an S-plan explainer in the Additional Resources below).
+
 A secondary objective was to make the controller stand-alone and not be fully dependent on Home Assistant; it needs to be able to operate the boost functions and the automatic mode in the absence of WiFi or a Home Assistant server. It also needs basic local scheduling of heating times as well as support for domestic hot-water (indirect cylinder) and the two zones (upstairs and downstairs).
 
 # Features:
