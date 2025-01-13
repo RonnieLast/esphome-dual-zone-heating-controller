@@ -43,6 +43,9 @@ The IO port mapping of the board is poorly documented but ESPHome does have a br
 https://devices.esphome.io/devices/AC-DC-ESP32-Relay-x4
 https://werner.rothschopf.net/microcontroller/202208_esp32_relay_x8_en.htm
 
+![circuit_image](https://github.com/user-attachments/assets/1e9925cb-4f6b-49eb-8737-a9f256f0795a)
+
+
 Controls Exposed and Feedback to Home Assistant:
 The controller exposes commonly used functions such as boost opions (30 min, 1 hour and 2 hour) for the upstairs and downstairs zones as well as a boost function for the hot water. 
 
