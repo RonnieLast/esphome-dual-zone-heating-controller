@@ -54,5 +54,9 @@ It also provides feedback on the states of each zone, whether that zone is in BO
 
 ![HA-screen2](https://github.com/user-attachments/assets/ca0305a7-b6b1-44fe-8c40-a8bba1dfc599)
 
+# ToDo
+ - The switch buttons are assembled using push-fit (or Dupont) jumper wires and these aren't sufficient for long-term use as they tend to loose their retaining pressure over time. I had planned on using IDC headers (known to many of us as IDE hard-drive connectors) in their place as the solder hole pitch on the circuitboard is 2.54mm, but the IDC headers are too long and interfere with surrounding components. So that's on the to-do list for further investigation.
+ - I'll upload a circuit diagram shortly, just working out how to best represent it on GitHub.
+
 # Additional Resources:
 S-plan wiring explainer courtesy of John Ward: https://flameport.com/electric/central_heating/heating_wiring_S_plan.cs4
