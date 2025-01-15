@@ -1,16 +1,15 @@
 # esphome-dual-zone-heating-controller
 
-This is the YAML for a heating controller based on ESPHome and an ESP32 control board with four relays. 
+This is a project for a heating controller based on ESPHome and an ESP32 control board with four relays. 
 
 ![20250109_152603-cropped](https://github.com/user-attachments/assets/7383f497-5f0b-4594-a1be-1189d921672c)
 
-*Early layout of the controller in an electrical box showing the OLED and back-lit buttons. The top red button is for hot water, middle is for upstairs and bottom is for downstairs.*
+*Layout of the controller in an electrical box showing the OLED and back-lit buttons. The top red button is for hot water, middle is for upstairs and bottom is for downstairs.*
 
 # Objectives
+The primary objective was to create a controller designed for an S-plan dual-zone and domestic hot-water (DHW) system with individual relays to control each of the zones and hot-water (with one spare relay). (See the link to an S-plan explainer in the Additional Resources below).
 
-The primary objective was to create a controller designed for an S-plan dual-zone and domestic hot-water (DHW) system with individual relays to control each of the zones and hot-water, and one spare relay. (See the link to an S-plan explainer in the Additional Resources below).
-
-A secondary objective was to make the controller stand-alone and not be fully dependent on Home Assistant; it needs to be able to operate the boost functions and the automatic mode in the absence of WiFi or a Home Assistant server. It also needs basic local scheduling of heating times as well as support for domestic hot-water (indirect cylinder) and the two zones (upstairs and downstairs).
+A secondary objective was to make the controller so that it is a stand-alone device and not be fully dependent on Home Assistant; it needs to be able to operate the boost functions and the automatic mode in the absence of WiFi or a Home Assistant server. It also needs basic local scheduling of heating times as well as support for domestic hot-water (indirect cylinder) and the two zones (upstairs and downstairs).
 
 # Features:
  - OLED display
@@ -46,7 +45,7 @@ https://werner.rothschopf.net/microcontroller/202208_esp32_relay_x8_en.htm
 
 ![circuit_image](https://github.com/user-attachments/assets/1e9925cb-4f6b-49eb-8737-a9f256f0795a)
 
-# Controls Exposed and Feedback to Home Assistant:
+# Controls and Feedback Exposed to Home Assistant:
 The controller exposes commonly used functions such as boost options (30 min, 1 hour and 2 hour) for the upstairs and downstairs zones as well as a boost function for the hot water. 
 
 ![HA-screen1](https://github.com/user-attachments/assets/5cb6633a-0480-4367-ad9f-962a77ada3b8)
