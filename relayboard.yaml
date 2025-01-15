@@ -1,34 +1,39 @@
 substitutions:
+  # Default name
   device_name: "heatingrelayboard"
+  # Default friendly name
   friendly_name: "Heating Relay Board"
-  auto_restore_mode: RESTORE_DEFAULT_ON   # For AUTO modes, attempt to restore state and default to ON if not possible to restore. 
-  boost_restore_mode: RESTORE_DEFAULT_OFF   # For BOOST conditions, attempt to restore state and default to OFF if not possible to restore.
-  mqtt_broker: "10.0.0.15"
-  sub_static_ip: "10.0.0.68"    # It's better to set a static IP for critical devices
-  sub_gateway: "10.0.0.1"
-  sub_subnet: "255.255.254.0"
-  dns_domain: ".local"
+  # The IP address of the controller. It's better to set a static IP for critical devices
+  sub_static_ip: ""
+  # Network gateway device, if needed
+  sub_gateway: ""
+  # Subnet of the network
+  sub_subnet: "255.255.255.0"
+  # Define a domain for this device to use. i.e. heatingrelayboard.my.lan
+  dns_domain: ".my.lan"
+  # The MQTT broker IP address
+  mqtt_broker: ""
+  # Set timezone of the controller. Can be entered in unix Country/Area format (i.e. "Europe/Dublin")
+  timezone: ""
+  # Restore the various states upon reboot to the saved state. For AUTO modes, attempt to restore state and default to ON if not possible to restore.
+  auto_restore_mode: RESTORE_DEFAULT_ON
+  # Restore the various states upon reboot to the saved state. For BOOST conditions, attempt to restore state and default to OFF if not possible to restore.
+  boost_restore_mode: RESTORE_DEFAULT_OFF   
+
 
 esphome:
   name: "${device_name}"
   friendly_name: "${friendly_name}"
   on_boot:
-    priority: -100  # Network sessions such as MQTT/API are running at this level
+    priority: -100  # Network sessions such as MQTT/API are running at level -100
     then:
       - ds1307.read_time:   # read the RTC time once when the system boots
-      - script.execute: reset_text_time_us_heating    # Pre-set the text to prevent "unknown" appearing on boot
-      - script.execute: reset_text_time_ds_heating
-      - script.execute: reset_text_time_hot_water
-
   project:
     name: esphome.esphome-dual-zone-heating-controller
-    version: "1.0"
-
-#dashboard_import:
-#  package_import_url: github://RonnieLast/esphome-dual-zone-heating-controller/relayboard.yaml@main
-#  import_full_config: false
+    version: "1.1"
 
 preferences:
+  # Save the condition of the controller to flash at an interval of 3 mins
   flash_write_interval: 3min
 
 esp32:
@@ -42,9 +47,10 @@ logger:
 
 # MQTT is enabled - https://esphome.io/components/mqtt.html
 # Both the HA API and MQTT in use. Adding line "reboot_timeout" to prevent reboot if API does not connect (isolated mode)
+# If you're not using MQTT then comment out the complete mqtt: section
 api: # No API when MQTT owns the comms
   encryption:
-    key: ""
+    key: "zelpPU2t8EQUq/vxQFube+wGJ/8gAcW2pp2O5OsgTvs="
   reboot_timeout: 0s   # Disable reboot if no HA connection
 
 mqtt:
@@ -65,7 +71,7 @@ mqtt:
 
 ota:
   platform: esphome
-  password: ""
+  password: "51f53bc3dcc20367df26077c8b832e07"
 
 mdns:
   disabled: false
@@ -95,6 +101,7 @@ i2c:
   scan: True
   frequency: 300kHz # Frequency of 300kHz eliminates most of the latency errors
   id: bus_a
+
 
 display:
   - platform: ssd1306_i2c
@@ -133,6 +140,7 @@ display:
 #            it.printf(0, 44, id(font2), TextAlign::BOTTOM_LEFT, "Temp:  %.1f°C", id(hot_tank_air_temperature_5_filtered).state);
 #            it.printf(0, 64, id(font2), TextAlign::BOTTOM_LEFT, "Energy: %.1fkWh", id(hot_tank_energy).state);
 
+
 interval:
   - interval: 3s   # Interval timer for page changes on OLED display
     then:
@@ -154,6 +162,7 @@ font:
   - file: "gfonts://Roboto"
     id: font3
     size: 16
+
 
 globals:
   # Global Enable/Disable for holiday/summertime disablement
@@ -179,9 +188,10 @@ globals:
     initial_value: '1'
     restore_value: yes
 
+
 time:
   - platform: ds1307
-    timezone: Europe/Dublin
+    timezone: "${timezone}"
     id: ds1307_time
     update_interval: never
   - platform: homeassistant
@@ -194,8 +204,14 @@ time:
   - platform: sntp
     servers: 10.0.0.1
     id: my_time
+
     # #### LOCAL HEATING SCHEDULES ####
     # These are locally set automatic heating schedules
+    # 
+    # Lambda: The lambda in each schedule controls the duration of the heating event, the trigger event text displayed on the screen as well as the calculation for the completion time.
+    # text_content: TIMER is the local heating schedule, BOOST is a manually triggered event.
+    # duration_in_min: The duration of the heating event in minutes. This is used to calculate the heating completion time.
+    # 
     on_time:
       # HOT WATER, every morning, 05.00 for 1hr30 mins
       - hours: 05
@@ -272,7 +288,9 @@ time:
 # GPIO25 - Relay #3
 # GPIO26 - Relay #4
 
+
 output:
+  # All LED feedback outputs
   - platform: ledc   # Status LED for downstairs button
     pin: GPIO14
     id: button_light_ds
@@ -288,6 +306,7 @@ output:
   - platform: gpio # This is the Status LED on GPIO23
     pin: GPIO23
     id: statusled
+
 
 binary_sensor:
   # To enable zone heating there are three types of button-press:
@@ -305,7 +324,7 @@ binary_sensor:
     id: upstairs_button_1
     filters:
       - delayed_on: 20ms
-    on_click: # Long press cancels
+    on_click: # Long press of more than min_length cancels the boost
       min_length: 3000ms
       max_length: 6000ms
       then:
@@ -335,7 +354,7 @@ binary_sensor:
     id: downstairs_button_1
     filters:
       - delayed_on: 20ms
-    on_click: # Long press cancels
+    on_click: # Long press of more than min_length cancels the boost
       min_length: 3000ms
       max_length: 6000ms
       then:
@@ -365,7 +384,7 @@ binary_sensor:
     id: dhw_button
     filters:
       - delayed_on: 20ms
-    on_click: # Long press cancels
+    on_click: # Long press of more than min_length cancels the boost
       min_length: 3000ms
       max_length: 6000ms
       then:
@@ -374,6 +393,8 @@ binary_sensor:
       then:
         - script.execute: hot_water_1hr30
 
+  # Switches created in HA to allow enabling/disabling of zones
+
   - platform: homeassistant  # Heating global or zone enable / disable
     name: "Heating Global Enable"
     entity_id: input_boolean.heating_global_enable
@@ -381,6 +402,7 @@ binary_sensor:
       then:
         - lambda: |-
             id(heating_global_enable) = x;
+
   - platform: homeassistant
     name: "Heating Downstairs Enable"
     entity_id: input_boolean.heating_downstairs_enable
@@ -388,6 +410,7 @@ binary_sensor:
       then:
         - lambda: |-
             id(heating_downstairs_enable) = x;
+
   - platform: homeassistant
     name: "Heating Upstairs Enable"
     entity_id: input_boolean.heating_upstairs_enable
@@ -396,9 +419,10 @@ binary_sensor:
         - lambda: |-
             id(heating_upstairs_enable) = x;
 
+
 light:
+  # These are the LED blink styles for each LED to display the status.
   - platform: monochromatic
-    # These are the LED blink styles for each LED to display the status.
     name: Downstairs Heating
     output: button_light_ds
     id: button_light_switch_ds
@@ -476,6 +500,7 @@ light:
           transition_length: 1.5s
           update_interval: 2s
 
+
 text_sensor:
   # These text-sensors push text to HA for status heating channel updates 
   - platform: template
@@ -490,20 +515,18 @@ text_sensor:
   - platform: template
     name: "Downstairs on until"
     id: text_time_ds_heating
-    #lambda: return {""};
   - platform: template
     name: "Upstairs on until"
     id: text_time_us_heating
-    #lambda: return {""};
   - platform: template
     name: "Hot Water BOOST until"
     id: text_time_hot_water
-    #lambda: return {""};
   - platform: template
-    name: "Controller Time"
+    name: "Controller Time"   # Every 30 seconds send the controller time to HA just so that we have it clearly displayed
     id: text_controller_time
     lambda: return id(ds1307_time).now().strftime("%H:%M");
     update_interval: 30s
+
 
 switch:
     # Four relay outputs, exposed as switches in Home Assistant
@@ -513,7 +536,7 @@ switch:
     name: Heating US relay direct
     id: brb_us_direct
     # restore_mode: ${relay_restore_mode}   # Do not use, handled by scripts
-    internal: true
+    internal: true # Hidden from HA
 
   - platform: gpio
     # DOWNSTAIRS RELAY
@@ -521,7 +544,7 @@ switch:
     name: Heating DS relay direct
     id: brb_ds_direct
     # restore_mode: ${relay_restore_mode}   # Do not use, handled by scripts
-    internal: true
+    internal: true # Hidden from HA
 
   - platform: gpio
     # HOT WATER RELAY
@@ -529,7 +552,7 @@ switch:
     name: Hot Water relay direct
     id: brb_hot_water_direct
     # restore_mode: ${relay_restore_mode}   # Do not use, handled by scripts
-    internal: true
+    internal: true # Hidden from HA
 
   - platform: gpio
     # NOT USED
@@ -538,7 +561,10 @@ switch:
     id: relay4_direct
     internal: true  # Hidden from HA
 
-  - platform: template # Switch exposed to HA
+  # Switches exposed to HA for boosting the heating
+  # For info on the lambdas, see the section "LOCAL HEATING SCHEDULES" above
+
+  - platform: template
     name: "Heating upstairs 30m"
     id: "heating_upstairs_30min_toggle"
     optimistic: true
@@ -552,7 +578,7 @@ switch:
       then:
         - script.execute: turn_off_upstairs
 
-  - platform: template # Switch exposed to HA
+  - platform: template 
     name: "Heating upstairs 1hr"
     id: "heating_upstairs_1hr_toggle"
     optimistic: true
@@ -566,7 +592,7 @@ switch:
       then:
         - script.execute: turn_off_upstairs
 
-  - platform: template # Switch exposed to HA
+  - platform: template 
     name: "Heating downstairs 30m"
     id: "heating_downstairs_30min_toggle"
     optimistic: true
@@ -580,7 +606,7 @@ switch:
       then:
         - script.execute: turn_off_downstairs
 
-  - platform: template # Switch exposed to HA
+  - platform: template 
     name: "Heating downstairs 1hr"
     id: "brb_heating_ds_1hr_toggle"
     optimistic: true
@@ -594,7 +620,7 @@ switch:
       then:
         - script.execute: turn_off_downstairs
 
-  - platform: template # Switch exposed to HA
+  - platform: template 
     name: "Heating downstairs 2hr"
     id: "brb_heating_ds_2hr_toggle"
     optimistic: true
@@ -608,7 +634,7 @@ switch:
       then:
         - script.execute: turn_off_downstairs
 
-  - platform: template # Switch exposed to HA
+  - platform: template 
     name: "Hot Water BOOST"
     id: "brb_hot_water_boost_toggle"
     optimistic: true
@@ -616,6 +642,8 @@ switch:
     turn_on_action:
       then:
         - script.execute: hot_water_1hr30
+
+  # Switches exposed to HA which allow zones to be set to AUTO mode
 
   - platform: template # Switch exposed to HA
     # AUTO mode UPSTAIRS
@@ -646,6 +674,7 @@ switch:
   - platform: restart
     id: "${device_name}_restart"
     name: "Boiler Relay Board Restart"
+
 
 # ############# SCRIPTS ##############
 script:
@@ -680,6 +709,10 @@ script:
             - switch.turn_off: brb_hot_water_direct
             - script.execute: turn_off_hot_water
             - logger.log: "BoilerRelayBoard Hot Water BOOST off"
+
+  # The _heating_generic scripts take the two parameteres passed within the lambdas (duration_in_min and text_content) and enable the heating as long as the zone is enabled.
+  # Templating the scripts like this cuts out having an individual script for each desired duration (30min, 1hr, 2hrs) for each zone.
+  # Ref: https://community.home-assistant.io/t/esphome-script-component-passing-parameters/581705
 
   - id: upstairs_heating_generic
     mode: restart
@@ -761,7 +794,9 @@ script:
                   - script.execute: boost_mode_off_ds
             - logger.log: "BoilerRelayBoard DS off"
 
-      # ####### Thermostat AUTO modes ########
+  # ####### Thermostat AUTO modes ########
+  # Call these when setting the zones into AUTO mode
+
   - id: auto_mode_on_us
     # Heating into AUTO mode UPSTAIRS
     mode: single
@@ -847,7 +882,7 @@ script:
     mode: single
     then:
       - light.turn_off: button_light_switch_ds
-      #- light.turn_on:
+      #- light.turn_on:     # Left as an example of how to set the button to a different mode
       #    id: button_light_switch_ds
       #    effect: "Standby2"
       #    brightness: 30%
@@ -861,10 +896,6 @@ script:
     mode: single
     then:
       - light.turn_off: button_light_switch_us
-      #- light.turn_on:
-      #    id: button_light_switch_us
-      #    effect: "Standby2"
-      #    brightness: 30%
       - text_sensor.template.publish:
           id: text_state_us_heating
           state: !lambda |-
@@ -877,10 +908,6 @@ script:
       - switch.turn_off: brb_ds_direct
       - script.execute: reset_text_time_ds_heating
       - light.turn_off: button_light_switch_ds
-      #- light.turn_on:
-      #    id: button_light_switch_ds
-      #    effect: "Standby2"
-      #    brightness: 30%
       - logger.log: "BoilerRelayBoard DS off longpress"
 
   - id: turn_off_upstairs
@@ -890,10 +917,6 @@ script:
       - switch.turn_off: brb_us_direct
       - script.execute: reset_text_time_us_heating
       - light.turn_off: button_light_switch_us
-      #- light.turn_on:
-      #    id: button_light_switch_us
-      #    effect: "Standby2"
-      #    brightness: 30%
       - logger.log: "BoilerRelayBoard US off longpress"
 
   - id: turn_off_hot_water
@@ -903,10 +926,6 @@ script:
       - switch.turn_off: brb_hot_water_direct
       - script.execute: reset_text_time_hot_water
       - light.turn_off: button_light_switch_dhw
-      #- light.turn_on:
-      #    id: button_light_switch_dhw
-      #    effect: "Standby2"
-      #    brightness: 30%
       - logger.log: "BoilerRelayBoard Hot Water BOOST off longpress"
 
   - id: reset_text_time_ds_heating
@@ -945,7 +964,10 @@ script:
           state: !lambda |-
             return {""};
 
+
 sensor:
+  # Input sensor data from HA
+  # You need these for integrated thermostats to work
   # Zone and hot-tank temperature sensor data ingest 
   - platform: homeassistant
     id: upstairs_room_temps_average
@@ -959,7 +981,7 @@ sensor:
   - platform: homeassistant
     id: hot_tank_energy
     entity_id: sensor.hot_tank_energy
-    # Cumulative counter
+    # Cumulative counter (Feature under consideration)
   - platform: template
     id: us_relay_ontime
     name: "Upstairs Relay Cumulative"
@@ -973,7 +995,6 @@ sensor:
           return {};
         }
     
-
 
 # Climate Thermostat section taken from a good example: https://community.home-assistant.io/t/diy-heating-and-hot-water-controller/321592/2
 climate:
