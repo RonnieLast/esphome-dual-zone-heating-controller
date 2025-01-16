@@ -55,7 +55,7 @@ It also provides feedback on the states of each zone, whether that zone is in BO
 ![HA-screen2](https://github.com/user-attachments/assets/ca0305a7-b6b1-44fe-8c40-a8bba1dfc599)
 
 # Components and Circuit Diagram
-![Heating_Controller_circuit_v1](https://github.com/user-attachments/assets/d00b8ab4-eb0a-4f56-be9c-624883408a95)
+![Heating_Controller_circuit_v1](https://github.com/user-attachments/assets/a485f4a2-36a9-475e-9d2a-33aabe2441d9)
 
 The Hot Water zone button's output connects to G15 and the LED connects to G4
 The Upstairs zone button's output connects to G17 and the LED connects to G18
