@@ -57,12 +57,12 @@ It also provides feedback on the states of each zone, whether that zone is in BO
 # Components and Circuit Diagram
 ![Heating_Controller_circuit_v1](https://github.com/user-attachments/assets/a485f4a2-36a9-475e-9d2a-33aabe2441d9)
 
-The Hot Water zone button's output connects to G15 and the LED connects to G4
-The Upstairs zone button's output connects to G17 and the LED connects to G18
-The Downstairs zone button's output connects to G13 and the LED connects to G14
-The ground pins for all three buttons and LED's route to a common connector (Wago in this case) and then back to a GND point on the board
-The I2C bus SDA comes from G21 and SDL comes from G22 and loops out from the RTC device to the OLED display
-The RTC and OLED both operate off 3.3v so route to 3V3 and GND respectively
+ - The Hot Water zone button's output connects to G15 and the LED connects to G4
+ - The Upstairs zone button's output connects to G17 and the LED connects to G18
+ - The Downstairs zone button's output connects to G13 and the LED connects to G14
+ - The ground pins for all three buttons and LED's route to a common connector (Wago in this case) and then back to a GND point on the board
+ - The I2C bus SDA comes from G21 and SDL comes from G22 and loops out from the RTC device to the OLED display
+ - The RTC and OLED both operate off 3.3v so route to 3V3 and GND respectively
 
 # ToDo
  - The switch buttons are assembled using push-fit (or Dupont) jumper wires and these aren't sufficient for long-term use as they tend to loose their retaining pressure over time. I had planned on using IDC headers (known to many of us as IDE hard-drive connectors) in their place as the solder hole pitch on the circuitboard is 2.54mm, but the IDC headers are too long and interfere with surrounding components. So that's on the to-do list for further investigation.
