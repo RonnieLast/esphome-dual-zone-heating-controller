@@ -22,7 +22,7 @@ A secondary objective was to make the controller so that it is a stand-alone dev
  - Optional internal climate/thermostats (auto-mode) to manage each zone. (Auto mode is dependant on HA for temperature data)
  - Zone or Global disablement from REST/HA
 
-The backlit buttons are multifunctional: one for boosting the hot water, one for the upstairs zone heating and one for the downstairs zone heating. 
+The backlit buttons used in this project are multifunctional: one for boosting the hot water, one for the upstairs zone heating and one for the downstairs zone heating. 
 For each of the heating zones there are three functions available:
   - Single press calls a 1hr heating boost
   - Double press (within 5 sec of the first press) calls a 2hr heating boost
@@ -43,7 +43,7 @@ The IO port mapping of the board is poorly documented but ESPHome does have a br
 https://devices.esphome.io/devices/AC-DC-ESP32-Relay-x4
 https://werner.rothschopf.net/microcontroller/202208_esp32_relay_x8_en.htm
 
-![circuit_image](https://github.com/user-attachments/assets/1e9925cb-4f6b-49eb-8737-a9f256f0795a)
+![Heating_Controller_labelled](https://github.com/user-attachments/assets/35c3ca37-1f9e-4d52-b6dd-7448ca5dcd5b)
 
 # Controls and Feedback Exposed to Home Assistant:
 The controller exposes commonly used functions such as boost options (30 min, 1 hour and 2 hour) for the upstairs and downstairs zones as well as a boost function for the hot water. 
@@ -53,6 +53,16 @@ The controller exposes commonly used functions such as boost options (30 min, 1 
 It also provides feedback on the states of each zone, whether that zone is in BOOST mode, TIMER mode, or AUTO mode. For both BOOST and TIMER mode we also get "on until" feedback on the completion time of each action. 
 
 ![HA-screen2](https://github.com/user-attachments/assets/ca0305a7-b6b1-44fe-8c40-a8bba1dfc599)
+
+# Components and Circuit Diagram
+![Heating_Controller_circuit_v1](https://github.com/user-attachments/assets/d00b8ab4-eb0a-4f56-be9c-624883408a95)
+
+The Hot Water zone button's output connects to G15 and the LED connects to G4
+The Upstairs zone button's output connects to G17 and the LED connects to G18
+The Downstairs zone button's output connects to G13 and the LED connects to G14
+The ground pins for all three buttons and LED's route to a common connector (Wago in this case) and then back to a GND point on the board
+The I2C bus SDA comes from G21 and SDL comes from G22 and loops out from the RTC device to the OLED display
+The RTC and OLED both operate off 3.3v so route to 3V3 and GND respectively
 
 # ToDo
  - The switch buttons are assembled using push-fit (or Dupont) jumper wires and these aren't sufficient for long-term use as they tend to loose their retaining pressure over time. I had planned on using IDC headers (known to many of us as IDE hard-drive connectors) in their place as the solder hole pitch on the circuitboard is 2.54mm, but the IDC headers are too long and interfere with surrounding components. So that's on the to-do list for further investigation.
